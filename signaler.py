@@ -34,11 +34,13 @@ def export_to_excel(data):
     shortdate = dt.today().strftime('%Y-%m-%d')
     date = dt.today().strftime("%H:%M")
 
-    title = 'Stock-picking - Handelsmuligheter'
+    title = 'Stock-picking - Signaler'
 
-    ws.title = "Handelsmuligheter"
+    ws.title = "Signaler"
 
-    headings = ['Overskrift', 'Kandidat', 'Bors', 'Navn', 'Ticker', 'Trendgulv', 'Trendtak','Dato', 'RSI', 'Stock-picking', 'Nivå', 'Signal', 'Risk/Reward', 'Potensial']
+    headings = ['Overskrift', 'Kandidat', 'Bors', 'Navn', 
+    'Ticker', 'Trendgulv', 'Trendtak', 'RSI', 'Stock-picking', 
+    'Nivå', 'Signal', 'Dato', 'Kvalitet', 'Objektiv']
 
     ws.append(headings)
 
@@ -49,67 +51,92 @@ def export_to_excel(data):
             ticker = data[index]['Ticker']
             trendgulv = data[index]['Trendgulv']
             trendtak = data[index]['Trendtak']
-            signal = data[index]['Handelsmulighetstype']
-            riskreward = data[index]['Riskreward']
-            potensial = data[index]['Potensial']
+            signal = data[index]['Signal']
+            kvalitet = data[index]['Kvalitet']
+            objektiv = data[index]['Objektiv']
             rsi = data[index]['Rsi']
 
-            ws.append([title, '', '', name, ticker, trendgulv, trendtak, date, rsi, 'handelsmuligheter', 'Kort sikt', signal, riskreward, potensial])
+            #print(date, ':', name, ':', ticker, ':', trendgulv, ':', trendtak, ':', signal, ':', kvalitet, ':', objektiv, ':', rsi)
 
-            #print(date, ",", name, ",", ticker, ",", trendgulv, ",", trendtak, ",", signal, ",", riskreward, ",", potensial, ",", rsi)
+            ws.append([title, '', '', name, ticker, trendgulv, trendtak, rsi, 'Alle indikatorer', 'Kort sikt', signal, date, kvalitet, objektiv])
+
     
-    wb.save("handelsmuligheter-" + str(shortdate) + ".xlsx")
+    wb.save("signaler-" + str(shortdate) + ".xlsx")
 
 
-def get_data_from_kortsikt(count, columns):
-
-    #Function to split a string
-    splitString = lambda row, line, numb: row.text.splitlines()[line].split()[numb]
+def get_data_from_subheader():
 
     try:
-        #Find header
-        #header = driver.find_element_by_xpath('//*[@id="ca2017_HeadNameTicker"]').text 
-      # Find subheader
         subheader = driver.find_element_by_xpath('//*[@id="ca2017_HeadPriceAndDateInfo"]').text
         
-        # Date attributes
+        #   Date attributes
         year = subheader.split()[-1]
         month = subheader.split()[-2]
         day = subheader.split()[-3].replace('.', '')
-
+        
         datetime_object = datetime.datetime.strptime(f'{year} {month} {day}', '%Y %b %d').date()
-
-       #Find the first line for trendgulv and trendtak
-        row_1 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[1]/td')
-      # Find the third line for rsi
-        row_2 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[3]/td')
-       #Get only the ticker from header
-        #ticker = header.replace('(','').replace(')','').replace('.', ' ').split()[-2]
-       #Get only the trendgulv value from first row
-        trendgulv = splitString(row_1, 1, 2)
-       #Get only the trendtak value from first row
-        trendtak = splitString(row_1, 2, 2)
-       #Get RSI
-        rsi = splitString(row_2, 1, -1)
-       
-       #  data_entry = {'dato': dato, 'name': name, 'ticker': ticker, 'signal': indikator, 'kvalitet': kvalitet, 'objektiv': objektiv}
-
-        data = {
-            'Date': datetime_object,
-            'Name': columns[count]['name'],
-            'Ticker': columns[count]['ticker'], 
-            'signal': columns[count]['signal'],
-            'kvalitet': columns[count]['kvalitet'],
-            'objektiv': columns[count]['objektiv'],
-            'Trendgulv': trendgulv, 
-            'Trendtak': trendtak, 
-            'Rsi': rsi,
-        } 
-
-        return data
+        
+        value = datetime_object
 
     except Exception as e:
-        print("error", e)
+        print(e)
+        
+        value = 'Not found'
+
+
+    return value
+
+
+def get_data_from_row_1(splitString):
+    try:
+        row_1 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[1]/td')
+        trendgulv = splitString(row_1, 1, 2)
+        trendtak = splitString(row_1, 2, 2)
+
+        data = ( trendgulv, trendtak )
+
+    except Exception as e:
+        data = ( 'Null', 'Null' )
+
+    return list(data)
+
+
+def get_data_from_row_2(splitString):
+    
+    try:
+        row_2 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[3]/td')
+        rsi = splitString(row_2, 1, -1)
+
+        value = rsi
+
+    except Exception as e:
+        value = 'Not found'
+
+    return value
+
+def get_data_from_kortsikt(count, columns):
+    #   Function to split a string
+    splitString = lambda row, line, numb: row.text.splitlines()[line].split()[numb]
+
+    datetime_obj = get_data_from_subheader()
+    trendgulv = get_data_from_row_1(splitString)[0]
+    trendtak = get_data_from_row_1(splitString)[1]
+
+    rsi = get_data_from_row_2(splitString)
+
+    print(datetime_obj, trendgulv, trendtak, rsi)
+
+    return {
+        'Date': datetime_obj,
+        'Name': columns[count]['name'],
+        'Ticker': columns[count]['ticker'], 
+        'Signal': columns[count]['signal'],
+        'Kvalitet': columns[count]['kvalitet'],
+        'Objektiv': columns[count]['objektiv'],
+        'Trendgulv': trendgulv,
+        'Trendtak': trendtak,
+        'Rsi': rsi,
+    } 
 
 
 def get_columns_from_each_entry_in_list(table, rows):
@@ -185,7 +212,7 @@ def signaler():
     dataList = []
 
     # Loop through each index within the offset int(offset)
-    while index <= int(offset):
+    while index <= 60:
         # Go to the next page in universe list
         driver.get(f'https://www.investtech.com/no/market.php?UniverseID=8230&product=16&sgnl=1&indr=0&timeSpan=2&Offset={index}')
 
@@ -214,32 +241,31 @@ def signaler():
 
         time.sleep(1)
 
-        print(columns)
-
         index += 30
     # Return the data
     return dataList
 
 
-try: 
-    # Set the executable path for chromedriver
-    browserPath = 'C:\Program Files (x86)\chromedriver.exe'
-    # Start chromedriver
-    driver = webdriver.Chrome(browserPath)
-    # Start page
-    driver.get('https://www.investtech.com/no/market.php?CountryID=1&product=0')
-    # Set implicit wait
-    driver.implicitly_wait(5)
-    # Login
-    login()
-    # Sleep for a moment before the script continues
-    time.sleep(3)
 
-    data = signaler()
+# Set the executable path for chromedriver
+browserPath = 'C:\Program Files (x86)\chromedriver.exe'
+# Start chromedriver
+driver = webdriver.Chrome(browserPath)
+# Start page
+driver.get('https://www.investtech.com/no/market.php?CountryID=1&product=0')
+# Set implicit wait
+driver.implicitly_wait(5)
 
-    print("data: ", data)
+# Login
+login()
 
-    #export_to_excel(data)
+# Sleep for a moment before the script continues
+time.sleep(3)
 
-except NoSuchElementException as e:
-    print("error: ", e)
+data = signaler()
+
+print(data)
+
+export_to_excel(data)
+
+
