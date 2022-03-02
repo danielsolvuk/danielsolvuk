@@ -66,42 +66,89 @@ def export_to_excel(data):
     wb.save("handelsmuligheter-" + str(shortdate) + ".xlsx")
 
 
-def get_data_from_kortsikt(count, columns):
 
-    # Function to split a string
-    splitString = lambda row, line, numb: row.text.splitlines()[line].split()[numb]
+def get_data_from_subheader():
 
     try:
-        # Find header
+        
+        #Find header
         header = driver.find_element_by_xpath('//*[@id="ca2017_HeadNameTicker"]').text 
         
-        # Find subheader
+        #Find subheader
         subheader = driver.find_element_by_xpath('//*[@id="ca2017_HeadPriceAndDateInfo"]').text
         
-        # Date attributes
+        #   Date attributes
         year = subheader.split()[-1]
         month = subheader.split()[-2]
         day = subheader.split()[-3].replace('.', '')
-
-        # Create date from the date attributes
+        
         datetime_object = datetime.datetime.strptime(f'{year} {month} {day}', '%Y %b %d').date()
 
-        # Find the first line for trendgulv and trendtak
-        row_1 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[1]/td')
-        # Find the third line for rsi
-        row_2 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[3]/td')
-        # Get only the ticker from header
         ticker = header.replace('(','').replace(')','').replace('.', ' ').split()[-2]
-        # Get only the trendgulv value from first row
+        
+        data = ( datetime_object, ticker )
+
+    except Exception as e:
+        data = ('Null', 'Null')
+
+    return list(data)
+
+def get_data_from_row_1(splitString):
+    try:
+        row_1 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[1]/td')
         trendgulv = splitString(row_1, 1, 2)
-        # Get only the trendtak value from first row
         trendtak = splitString(row_1, 2, 2)
-        # Get RSI
+
+        data = ( trendgulv, trendtak )
+
+    except Exception as e:
+        data = ( 'Null', 'Null' )
+
+    return list(data)
+
+
+def get_data_from_row_2(splitString):
+    
+    try:
+        row_2 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[3]/td')
         rsi = splitString(row_2, 1, -1)
 
-        # Put the data together 
-        data = {
-            'Date': datetime_object,
+        value = rsi
+
+    except Exception as e:
+        value = 'Not found'
+
+    return value
+
+def get_data_from_kortsikt(count, columns):
+    #   Function to split a string
+    splitString = lambda row, line, numb: row.text.splitlines()[line].split()[numb]
+
+    datetime_obj = get_data_from_subheader()[0]
+    ticker = get_data_from_subheader()[1]
+
+    trendgulv = get_data_from_row_1(splitString)[0]
+    trendtak = get_data_from_row_1(splitString)[1]
+
+    rsi = get_data_from_row_2(splitString)
+
+    print(datetime_obj, trendgulv, trendtak, rsi)
+
+    # return  {
+    #     'Date': datetime_obj,
+    #     'Name': columns[count]['name'],
+    #     'Ticker': columns[count]['ticker'], 
+    #     'Days_since': columns[count]['dager_siden'],
+    #     'Pivotpunkt': columns[count]['pivotpunkt'],
+    #     'Days_since_id': columns[count]['dager_siden_id'],
+    #     'Signal': columns[count]['signal'],
+    #     'Trendgulv': trendgulv, 
+    #     'Trendtak': trendtak, 
+    #     'Rsi': rsi,
+    # } 
+
+    return {
+            'Date': datetime_obj,
             'Name': columns[count]['name'],
             'Ticker': ticker, 
             'Trendgulv': trendgulv, 
@@ -112,10 +159,56 @@ def get_data_from_kortsikt(count, columns):
             'Potensial': columns[count]['potensial']
         } 
 
-        return data
+# def get_data_from_kortsikt(count, columns):
 
-    except Exception as e:
-        print("error", e)
+#     # Function to split a string
+#     splitString = lambda row, line, numb: row.text.splitlines()[line].split()[numb]
+
+#     try:
+#         # Find header
+#         header = driver.find_element_by_xpath('//*[@id="ca2017_HeadNameTicker"]').text 
+        
+#         # Find subheader
+#         subheader = driver.find_element_by_xpath('//*[@id="ca2017_HeadPriceAndDateInfo"]').text
+        
+#         # Date attributes
+#         year = subheader.split()[-1]
+#         month = subheader.split()[-2]
+#         day = subheader.split()[-3].replace('.', '')
+
+#         # Create date from the date attributes
+#         datetime_object = datetime.datetime.strptime(f'{year} {month} {day}', '%Y %b %d').date()
+
+#         # Find the first line for trendgulv and trendtak
+#         row_1 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[1]/td')
+#         # Find the third line for rsi
+#         row_2 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[3]/td')
+#         # Get only the ticker from header
+#         ticker = header.replace('(','').replace(')','').replace('.', ' ').split()[-2]
+#         # Get only the trendgulv value from first row
+#         trendgulv = splitString(row_1, 1, 2)
+#         # Get only the trendtak value from first row
+#         trendtak = splitString(row_1, 2, 2)
+#         # Get RSI
+#         rsi = splitString(row_2, 1, -1)
+
+#         # Put the data together 
+#         data = {
+#             'Date': datetime_object,
+#             'Name': columns[count]['name'],
+#             'Ticker': ticker, 
+#             'Trendgulv': trendgulv, 
+#             'Trendtak': trendtak, 
+#             'Rsi': rsi,
+#             'Handelsmulighetstype': columns[count]['handelstype'],
+#             'Riskreward': columns[count]['riskreward'],
+#             'Potensial': columns[count]['potensial']
+#         } 
+
+#         return data
+
+#     except Exception as e:
+#         print("error", e)
 
 
 def get_columns_from_each_entry_in_list(table, rows):
