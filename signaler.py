@@ -212,7 +212,7 @@ def signaler():
     dataList = []
 
     # Loop through each index within the offset int(offset)
-    while index <= 60:
+    while index <= 30:
         # Go to the next page in universe list
         driver.get(f'https://www.investtech.com/no/market.php?UniverseID=8230&product=16&sgnl=1&indr=0&timeSpan=2&Offset={index}')
 
@@ -246,6 +246,71 @@ def signaler():
     return dataList
 
 
+def login_pareto():
+    # Login
+    username = driver.find_element(By.XPATH, '//*[@id="username"]')
+
+    password = driver.find_element(By.XPATH, '//*[@id="password"]')
+
+    username.send_keys('pareto@teaks.no')
+
+    password.send_keys('Vinter1234_')
+
+    elem = driver.find_element(By.XPATH, '/html/body/div[2]/div[1]/div/div[1]/form/div[4]/button')
+
+    elem.click()
+
+
+def get_data_from_pareto():
+    urls = []
+    dataList = []
+
+    search_btn = driver.find_element(By.CLASS_NAME, 'cell-input')
+
+    for index in range(len(data)):
+
+        search_btn.clear()
+
+        search_btn.send_keys(data[index]['Ticker'])
+
+        time.sleep(3)
+
+        search_btn.send_keys(u'\ue007')
+        search_btn.send_keys(u'\ue007')
+
+        urls.append(driver.current_url)
+    
+    for index, url in enumerate(urls):
+        if index > 0:
+            
+            driver.get(url)
+
+            time.sleep(3)
+
+            spans = driver.find_elements(By.CLASS_NAME, 'cell-w-order-book__footer-label')
+            name = driver.find_element(By.ID, 'js-wt-page-header').text
+
+            buy = spans[1].text
+            sell = spans[2].text 
+            spread = spans[4].text 
+
+            time.sleep(3)
+
+            history = driver.find_element(By.XPATH, '//*[@id="section_main-content"]/div/ng-component/tabbar/nav/div/div/div/div[2]/button')
+            history.click()
+
+            time.sleep(1)
+
+            date = driver.find_element(By.XPATH, '//*[@id="section_main-content"]/div/ng-component/tabbar/tab[2]/div/instrumenthistory/div/div/div/history/div/table[1]/tbody/tr[1]/td[1]').text
+            handler = driver.find_element(By.XPATH, '//*[@id="section_main-content"]/div/ng-component/tabbar/tab[2]/div/instrumenthistory/div/div/div/history/div/table[1]/tbody/tr[1]/td[6]').text
+            volum = driver.find_element(By.XPATH, '//*[@id="section_main-content"]/div/ng-component/tabbar/tab[2]/div/instrumenthistory/div/div/div/history/div/table[1]/tbody/tr[1]/td[7]').text
+            omsatt = driver.find_element(By.XPATH, '//*[@id="section_main-content"]/div/ng-component/tabbar/tab[2]/div/instrumenthistory/div/div/div/history/div/table[1]/tbody/tr[1]/td[8]').text
+
+            dataList.append({'date': date, 'name': name, 'sell': sell, 'buy': buy, 'spread': spread,'handler': handler,'volum': volum, 'omsatt': omsatt })
+    
+    return dataList
+
+
 
 # Set the executable path for chromedriver
 browserPath = 'C:\Program Files (x86)\chromedriver.exe'
@@ -254,7 +319,7 @@ driver = webdriver.Chrome(browserPath)
 # Start page
 driver.get('https://www.investtech.com/no/market.php?CountryID=1&product=0')
 # Set implicit wait
-driver.implicitly_wait(5)
+driver.implicitly_wait(10)
 
 # Login
 login()
@@ -264,8 +329,19 @@ time.sleep(3)
 
 data = signaler()
 
+driver.get('https://api.infrontservices.com/id/login?signin=0a9f53049304c899f5f3b19390b73d0d&encclient=aHR0cDovL3RyYWRlci5nb2luZnJvbnQuY29t')
+
+login_pareto()
+
+time.sleep(3)
+
+paretoData = get_data_from_pareto()
+
+for pData in range(len(paretoData)):
+    data[pData].update(paretoData[pData])
+
 print(data)
 
+
+
 export_to_excel(data)
-
-
