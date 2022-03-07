@@ -148,56 +148,6 @@ def get_data_from_kortsikt(count, columns):
     } 
 
 
-# def get_data_from_kortsikt(count, columns):
-
-#     #Function to split a string
-#     splitString = lambda row, line, numb: row.text.splitlines()[line].split()[numb]
-
-#     try:
-#         #Find header
-#         #header = driver.find_element_by_xpath('//*[@id="ca2017_HeadNameTicker"]').text 
-#       # Find subheader
-#         subheader = driver.find_element_by_xpath('//*[@id="ca2017_HeadPriceAndDateInfo"]').text
-        
-#         # Date attributes
-#         year = subheader.split()[-1]
-#         month = subheader.split()[-2]
-#         day = subheader.split()[-3].replace('.', '')
-
-#         datetime_object = datetime.datetime.strptime(f'{year} {month} {day}', '%Y %b %d').date()
-
-#        #Find the first line for trendgulv and trendtak
-#         row_1 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[1]/td')
-#       # Find the third line for rsi
-#         row_2 = driver.find_element_by_xpath('//*[@id="ca2017_QuantIndicatorsTable"]/tbody/tr[3]/td')
-#        #Get only the ticker from header
-#         #ticker = header.replace('(','').replace(')','').replace('.', ' ').split()[-2]
-#        #Get only the trendgulv value from first row
-#         trendgulv = splitString(row_1, 1, 2)
-#        #Get only the trendtak value from first row
-#         trendtak = splitString(row_1, 2, 2)
-#        #Get RSI
-#         rsi = splitString(row_2, 1, -1)
-       
-#        #  data_entry = {'dato': dato, 'name': name, 'ticker': ticker, 'signal': indikator, 'kvalitet': kvalitet, 'objektiv': objektiv}
-
-#         data = {
-#             'Date': datetime_object,
-#             'Name': columns[count]['name'],
-#             'Ticker': columns[count]['ticker'], 
-#             'Days_since': columns[count]['dager_siden'],
-#             'Pivotpunkt': columns[count]['pivotpunkt'],
-#             'Days_since_id': columns[count]['dager_siden_id'],
-#             'Signal': columns[count]['signal'],
-#             'Trendgulv': trendgulv, 
-#             'Trendtak': trendtak, 
-#             'Rsi': rsi,
-#         } 
-
-#         return data
-
-#     except Exception as e:
-#         print("error", e)
 
 
 def get_columns_from_each_entry_in_list(table, rows, m_text):
